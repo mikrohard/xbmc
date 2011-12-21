@@ -494,6 +494,7 @@ void CDVDPlayerVideo::Process()
       if(bPacketDrop)
         bRequestDrop = true;
 
+      bRequestDrop = false;
       // tell codec if next frame should be dropped
       // problem here, if one packet contains more than one frame
       // both frames will be dropped in that case instead of just the first

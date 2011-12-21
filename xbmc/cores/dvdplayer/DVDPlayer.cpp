@@ -677,6 +677,9 @@ void CDVDPlayer::OpenDefaultStreams()
       if(OpenAudioStream(s.id, s.source))
         valid = true;
     }
+
+    CLog::Log(LOGDEBUG, "MOLDAVIJA: CloseAudioStream in openDefaultStreams()? %d", !valid);
+
     if(!valid)
       CloseAudioStream(true);
   }
@@ -801,7 +804,7 @@ bool CDVDPlayer::ReadPacket(DemuxPacket*& packet, CDemuxStream*& stream)
     {
       m_SelectionStreams.Clear(STREAM_NONE, STREAM_SOURCE_DEMUX);
       m_SelectionStreams.Update(m_pInputStream, m_pDemuxer);
-      OpenDefaultStreams();
+//      OpenDefaultStreams();
     }
     return true;
   }
@@ -1198,6 +1201,8 @@ void CDVDPlayer::Process()
     m_errorCount = 0;
 
     // check so that none of our streams has become invalid
+    if (!IsValidStream(m_CurrentAudio)    && m_dvdPlayerAudio.IsStalled())
+    CLog::Log(LOGDEBUG, "MOLDAVIJA: CloseAudioStream? %d && %d", !IsValidStream(m_CurrentAudio),m_dvdPlayerAudio.IsStalled());
     if (!IsValidStream(m_CurrentAudio)    && m_dvdPlayerAudio.IsStalled())    CloseAudioStream(true);
     if (!IsValidStream(m_CurrentVideo)    && m_dvdPlayerVideo.IsStalled())    CloseVideoStream(true);
     if (!IsValidStream(m_CurrentSubtitle) && m_dvdPlayerSubtitle.IsStalled()) CloseSubtitleStream(true);
@@ -2114,6 +2119,7 @@ void CDVDPlayer::HandleMessages()
         CDVDMsgPlayerSetAudioStream* pMsg2 = (CDVDMsgPlayerSetAudioStream*)pMsg;
 
         SelectionStream& st = m_SelectionStreams.Get(STREAM_AUDIO, pMsg2->GetStreamId());
+        CLog::Log(LOGDEBUG, "MOLDAVIJA: CloseAudioStream v2? %d", st.source);
         if(st.source != STREAM_SOURCE_NONE)
         {
           if(st.source == STREAM_SOURCE_NAV && m_pInputStream && m_pInputStream->IsStreamType(DVDSTREAM_TYPE_DVD))
@@ -2121,13 +2127,18 @@ void CDVDPlayer::HandleMessages()
             CDVDInputStreamNavigator* pStream = (CDVDInputStreamNavigator*)m_pInputStream;
             if(pStream->SetActiveAudioStream(st.id))
             {
+              CLog::Log(LOGDEBUG, "MOLDAVIJA: CloseAudioStream v3?");
               m_dvd.iSelectedAudioStream = -1;
               CloseAudioStream(false);
               m_messenger.Put(new CDVDMsgPlayerSeek(GetTime(), true, true, true));
             }
+	    else {
+	      CLog::Log(LOGDEBUG, "MOLDAVIJA: CloseAudioStream v4?");
+	    }
           }
           else
           {
+	    CLog::Log(LOGDEBUG, "MOLDAVIJA: CloseAudioStream v5?");
             CloseAudioStream(false);
             OpenAudioStream(st.id, st.source);
             m_messenger.Put(new CDVDMsgPlayerSeek(GetTime(), true, true, true));
@@ -2901,6 +2912,21 @@ bool CDVDPlayer::OpenVideoStream(int iStream, int source)
   else
     m_dvdPlayerVideo.SendMessage(new CDVDMsg(CDVDMsg::GENERAL_RESET));
 
+  CLog::Log(LOGNOTICE, "OPEN VIDEO STREAM HINTS: %d %d %d %d %.2f %d %d %d %d %d", hint.fpsscale, hint.fpsrate, hint.height, hint.width, hint.aspect, hint.vfr, hint.stills, hint.level, hint.profile, hint.ptsinvalid);
+/*
+  hint.fpsscale = 1;
+  hint.fpsrate = 25;
+  hint.height = 576;
+  hint.width = 544;
+  hint.aspect = 0.0;
+  hint.vfr = 0;
+  hint.stills = 0;
+  hint.level = 30;
+  hint.profile = 100;
+  hint.ptsinvalid = 0;
+
+  CLog::Log(LOGNOTICE, "OPEN VIDEO STREAM HINTS after: %d %d %d %d %.2f %d %d %d %d %d", hint.fpsscale, hint.fpsrate, hint.height, hint.width, hint.aspect, hint.vfr, hint.stills, hint.level, hint.profile, hint.ptsinvalid);
+*/
   /* store information about stream */
   m_CurrentVideo.id = iStream;
   m_CurrentVideo.source = source;
